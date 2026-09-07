@@ -3,14 +3,41 @@
 #=============================
 print("\n========== Step 48.12A : ADD OCR TIMEOUT PROTECTION ========== ")
 
+import os
+import shutil
 import pytesseract
 
 from src.preprocessing import preprocess_image
 
 
-TESSERACT_PATH = r"C:\Program Files\Tesseract-OCR\tesseract.exe\tesseract.exe"
+TESSERACT_PATH = shutil.which(
+    "tesseract"
+)
 
-pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+
+if TESSERACT_PATH:
+
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+
+else:
+
+    WINDOWS_TESSERACT_PATH = (
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe\tesseract.exe"
+    )
+
+    if os.path.exists(
+        WINDOWS_TESSERACT_PATH
+    ):
+
+        pytesseract.pytesseract.tesseract_cmd = (
+            WINDOWS_TESSERACT_PATH
+        )
+
+    else:
+
+        raise FileNotFoundError(
+            "Tesseract OCR was not found."
+        )
 
 
 #=============================
