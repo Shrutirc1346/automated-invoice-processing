@@ -25,21 +25,22 @@ print("\n========== Step 48.22 : CONNECT FINANCIAL PARSERS ========== ")
 
 def process_invoice(image_path):
 
-    ocr_text = extract_text(
-        image_path
-    )
+    ocr_text = extract_text(image_path)
 
-    invoice_information = extract_invoice_information(
-        ocr_text
-    )
+    invoice_information = extract_invoice_information(ocr_text)
 
-    items = extract_items(
-        ocr_text
-    )
+    items = extract_items(ocr_text)
 
-    financial_records = extract_all_ocr_financial_rows(
-        ocr_text
-    )
+    if not items:
+        print("\nNo invoice items could be extracted.")
+        return []
+
+    financial_records = extract_all_ocr_financial_rows(ocr_text)
+
+    print("\n========== Step 51.2 : INSPECT FINANCIAL RECORDS ========== ")
+
+    print("\nFinancial Records:")
+    print(financial_records)
 
     records = []
 

@@ -2,5 +2,7 @@ numpy
 pandas
 matplotlib
 opencv-python
+pytesseract
 Pillow
 scikit-learn
+streamlit

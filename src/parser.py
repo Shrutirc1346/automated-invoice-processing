@@ -1,9 +1,15 @@
 #=============================
-# Step 48.21 : Fix Financial Parser
+# Step 48.24 : Fix PDF Financial Layout Parser
 #=============================
-print("\n========== Step 48.21 : FIX FINANCIAL PARSER ========== ")
+print("\n========== Step 48.24 : FIX PDF FINANCIAL LAYOUT PARSER ========== ")
 
 import re
+
+
+#=============================
+# Step 48.21 : Convert OCR Number
+#=============================
+print("\n========== Step 48.21 : CONVERT OCR NUMBER ========== ")
 
 
 def convert_number(value):
@@ -14,6 +20,7 @@ def convert_number(value):
     value = value.replace(",", ".")
 
     try:
+
         return float(value)
 
     except ValueError:
@@ -935,6 +942,334 @@ def extract_item_gross_worth_values_v2(
 
 
 #=============================
+# Step 48.24 : Extract PDF Separated Financial Layout
+#=============================
+print("\n========== Step 48.24 : EXTRACT PDF SEPARATED FINANCIAL LAYOUT ========== ")
+
+
+def extract_pdf_separated_financial_values(
+    ocr_text
+):
+
+    lines = [
+
+        line.strip()
+
+        for line in ocr_text.splitlines()
+
+        if line.strip()
+
+    ]
+
+    # Detect the special PDF layout.
+    has_net_price_header = any(
+        line.lower() == "net price"
+        for line in lines
+    )
+
+    has_net_worth_vat_header = any(
+        line.lower() == "net worth vat [%]"
+        for line in lines
+    )
+
+    has_gross_worth_header = any(
+        line.lower() == "gross worth"
+        for line in lines
+    )
+
+    if not (
+        has_net_price_header
+        and has_net_worth_vat_header
+        and has_gross_worth_header
+    ):
+
+        return []
+
+
+    #=============================
+    # Step 48.24 : Extract PDF Unit Prices
+    #=============================
+    print(
+        "\n========== "
+        "Step 48.24 : EXTRACT PDF UNIT PRICES "
+        "========== "
+    )
+
+    net_price_start = None
+    net_worth_total_start = None
+
+    for index, line in enumerate(lines):
+
+        lower_line = line.lower()
+
+        if lower_line == "net price":
+
+            net_price_start = index
+
+        elif (
+            lower_line == "net worth"
+            and net_worth_total_start is None
+        ):
+
+            net_worth_total_start = index
+
+    unit_prices = []
+
+    if (
+        net_price_start is not None
+        and net_worth_total_start is not None
+    ):
+
+        net_price_lines = lines[
+            net_price_start + 1:
+            net_worth_total_start
+        ]
+
+        for line in net_price_lines:
+
+            value_text = (
+                line
+                .replace("$", "")
+                .replace(" ", "")
+                .strip()
+            )
+
+            if not re.fullmatch(
+                r"\d+[,.]\d{2}",
+                value_text
+            ):
+
+                continue
+
+            value = (
+                convert_ocr_number(
+                    value_text
+                )
+            )
+
+            if value is not None:
+
+                unit_prices.append(
+                    value
+                )
+
+
+    #=============================
+    # Step 48.24 : Extract Net Worth and VAT
+    #=============================
+    print(
+        "\n========== "
+        "Step 48.24 : EXTRACT PDF NET WORTH AND VAT "
+        "========== "
+    )
+
+    net_worth_vat_start = None
+
+    for index, line in enumerate(lines):
+
+        if line.lower() == "net worth vat [%]":
+
+            net_worth_vat_start = index
+
+            break
+
+    net_worth_values = []
+    vat_values = []
+
+    if net_worth_vat_start is not None:
+
+        end_position = len(lines)
+
+        for index in range(
+            net_worth_vat_start + 1,
+            len(lines)
+        ):
+
+            if lines[index].lower() in (
+                "vat",
+                "gross",
+                "gross worth"
+            ):
+
+                end_position = index
+
+                break
+
+        net_worth_vat_lines = lines[
+            net_worth_vat_start + 1:
+            end_position
+        ]
+
+        for line in net_worth_vat_lines:
+
+            match = re.fullmatch(
+
+                r"\$?\s*"
+                r"([\d\s]+[,.]\d{2})\s+"
+                r"(\d+(?:[,.]\d+)?)%",
+
+                line
+
+            )
+
+            if not match:
+
+                continue
+
+            net_worth = (
+                convert_ocr_number(
+                    match.group(1)
+                )
+            )
+
+            vat = (
+                convert_ocr_number(
+                    match.group(2)
+                )
+            )
+
+            if net_worth is not None:
+
+                net_worth_values.append(
+                    net_worth
+                )
+
+            if vat is not None:
+
+                vat_values.append(
+                    vat
+                )
+
+
+    #=============================
+    # Step 48.24 : Extract PDF Gross Worth
+    #=============================
+    print(
+        "\n========== "
+        "Step 48.24 : EXTRACT PDF GROSS WORTH "
+        "========== "
+    )
+
+    gross_worth_start = None
+
+    for index, line in enumerate(lines):
+
+        if line.lower() == "gross worth":
+
+            gross_worth_start = index
+
+            break
+
+    gross_worth_values = []
+
+    if gross_worth_start is not None:
+
+        for line in lines[
+            gross_worth_start + 1:
+        ]:
+
+            value_text = (
+                line
+                .replace("$", "")
+                .replace(" ", "")
+                .strip()
+            )
+
+            if not re.fullmatch(
+                r"\d+[,.]\d{2}",
+                value_text
+            ):
+
+                continue
+
+            value = (
+                convert_ocr_number(
+                    value_text
+                )
+            )
+
+            if value is not None:
+
+                gross_worth_values.append(
+                    value
+                )
+
+
+    #=============================
+    # Step 48.24 : Determine Item Count
+    #=============================
+    print(
+        "\n========== "
+        "Step 48.24 : DETERMINE PDF ITEM COUNT "
+        "========== "
+    )
+
+    quantities = extract_separate_quantities(
+        ocr_text
+    )
+
+    item_count_candidates = [
+
+        len(unit_prices),
+
+        len(net_worth_values),
+
+        len(vat_values),
+
+        len(gross_worth_values)
+
+    ]
+
+    if quantities:
+
+        item_count_candidates.append(
+            len(quantities)
+        )
+
+    item_count = min(
+        item_count_candidates
+    )
+
+
+    # Gross worth contains the invoice total
+    # after the item-level gross values.
+    #
+    # Therefore, use only the first item_count
+    # values and ignore the final invoice total.
+
+    records = []
+
+    for index in range(
+        item_count
+    ):
+
+        records.append({
+
+            "Unit Price": unit_prices[
+                index
+            ],
+
+            "Net Worth": net_worth_values[
+                index
+            ],
+
+            "VAT": vat_values[
+                index
+            ],
+
+            "Gross Worth": gross_worth_values[
+                index
+            ],
+
+            "Extraction Layout":
+                "PDF-Separated-Financial"
+
+        })
+
+    return records
+
+
+#=============================
 # Step 48.21 : Combine Financial Parsers
 #=============================
 print("\n========== Step 48.21 : COMBINE FINANCIAL PARSERS ========== ")
@@ -943,6 +1278,35 @@ print("\n========== Step 48.21 : COMBINE FINANCIAL PARSERS ========== ")
 def extract_all_ocr_financial_rows(
     ocr_text
 ):
+
+    #=============================
+    # Step 48.24 : Try PDF Separated Layout
+    #=============================
+    print(
+        "\n========== "
+        "Step 48.24 : TRY PDF SEPARATED LAYOUT "
+        "========== "
+    )
+
+    pdf_separated_rows = (
+        extract_pdf_separated_financial_values(
+            ocr_text
+        )
+    )
+
+    if pdf_separated_rows:
+
+        return pdf_separated_rows
+
+
+    #=============================
+    # Step 48.21 : Try Single-Line Layout
+    #=============================
+    print(
+        "\n========== "
+        "Step 48.21 : TRY SINGLE-LINE LAYOUT "
+        "========== "
+    )
 
     single_line_rows = (
         extract_single_line_financial_values(
@@ -954,6 +1318,16 @@ def extract_all_ocr_financial_rows(
 
         return single_line_rows
 
+
+    #=============================
+    # Step 48.21 : Try Separated Financial Layout
+    #=============================
+    print(
+        "\n========== "
+        "Step 48.21 : TRY SEPARATED FINANCIAL LAYOUT "
+        "========== "
+    )
+
     separated_rows = (
         extract_separated_financial_values(
             ocr_text
@@ -964,6 +1338,7 @@ def extract_all_ocr_financial_rows(
 
         return separated_rows
 
+
     return []
 
 
@@ -971,4 +1346,4 @@ print("\nFinancial parser functions connected successfully.")
 print("Function available:")
 print("extract_all_ocr_financial_rows()")
 
-print("\n========== PARSER MODULE READY ========== ")
+print("\n========== STEP 48.24 COMPLETED ========== ")
