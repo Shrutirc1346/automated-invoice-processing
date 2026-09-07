@@ -1,26 +1,33 @@
 #=============================
-# Step 48.11B : Fix Integrated Production Pipeline
+# Step 48.23 : Re-run Modular Pipeline
 #=============================
-print("\n========== Step 48.11B : FIX INTEGRATED PRODUCTION PIPELINE ========== ")
+print("\n========== Step 48.23 : RE-RUN MODULAR PIPELINE ========== ")
 
 import os
 import pandas as pd
 
+from src.validation import validate_financial_data
+from src.anomaly_detector import detect_anomalies
 from src.ocr_engine import extract_text
-
-print("\n========== Step 48.16A : CONNECT SPECIAL-SEPARATED FINANCIAL PARSER ========== ")
 
 from src.parser import (
     extract_invoice_information,
     extract_items,
-    extract_quantities,
-    extract_descriptions,
-    extract_financial_values
+    extract_all_ocr_financial_rows
 )
+
+
+#=============================
+# Step 48.22 : Connect Financial Parsers
+#=============================
+print("\n========== Step 48.22 : CONNECT FINANCIAL PARSERS ========== ")
+
 
 def process_invoice(image_path):
 
-    ocr_text = extract_text(image_path)
+    ocr_text = extract_text(
+        image_path
+    )
 
     invoice_information = extract_invoice_information(
         ocr_text
@@ -30,43 +37,87 @@ def process_invoice(image_path):
         ocr_text
     )
 
-    quantities = extract_quantities(
-    ocr_text
-    )
-    descriptions = extract_descriptions(
+    financial_records = extract_all_ocr_financial_rows(
         ocr_text
     )
 
-    financial_records = extract_financial_values(ocr_text)
-
     records = []
 
-    record_count = min(
-        len(items),
-        len(descriptions),
-        len(financial_records)
-    )
+    for index, item in enumerate(items):
 
-    for index in range(record_count):
+        financial_record = (
+            financial_records[index]
+            if index < len(financial_records)
+            else {}
+        )
 
         record = {
-            "Image Name": os.path.basename(image_path),
-            "Invoice Number": invoice_information["Invoice Number"],
-            "Invoice Date": invoice_information["Invoice Date"],
-            "Vendor Name": invoice_information["Vendor Name"],
-            "Total Amount": invoice_information["Total Amount"],
-            "Item Number": items[index]["Item Number"],
-            "Description": descriptions[index]["Description"],
-            "Quantity": quantities[index] if index < len(quantities) else None,            
-            "Unit Price": financial_records[index]["Unit Price"],
-            "Net Worth": financial_records[index]["Net Worth"],
-            "VAT": financial_records[index]["VAT"],
-            "Gross Worth": financial_records[index]["Gross Worth"]
+
+            "Image Name": os.path.basename(
+                image_path
+            ),
+
+            "Invoice Number": invoice_information[
+                "Invoice Number"
+            ],
+
+            "Invoice Date": invoice_information[
+                "Invoice Date"
+            ],
+
+            "Vendor Name": invoice_information[
+                "Vendor Name"
+            ],
+
+            "Total Amount": invoice_information[
+                "Total Amount"
+            ],
+
+            "Item Number": item[
+                "Item Number"
+            ],
+
+            "Description": item[
+                "Description"
+            ],
+
+            "Quantity": item[
+                "Quantity"
+            ],
+
+            "Unit Price": financial_record.get(
+                "Unit Price"
+            ),
+
+            "Net Worth": financial_record.get(
+                "Net Worth"
+            ),
+
+            "VAT": financial_record.get(
+                "VAT"
+            ),
+
+            "Gross Worth": financial_record.get(
+                "Gross Worth"
+            )
+
         }
 
-        records.append(record)
+        records.append(
+            record
+        )
 
-    return records
+    records_dataframe = pd.DataFrame(
+        records
+    )
+
+    validated_records = validate_financial_data(
+        records_dataframe
+    )
+
+    return validated_records.to_dict(
+        orient="records"
+    )
 
 
 #=============================
@@ -81,13 +132,18 @@ def process_invoice_folder(invoice_folder):
 
     image_files = [
         file_name
-        for file_name in os.listdir(invoice_folder)
+        for file_name in os.listdir(
+            invoice_folder
+        )
         if file_name.lower().endswith(
             (".jpg", ".jpeg", ".png")
         )
     ]
 
-    for index, file_name in enumerate(image_files, start=1):
+    for index, file_name in enumerate(
+        image_files,
+        start=1
+    ):
 
         image_path = os.path.join(
             invoice_folder,
@@ -114,9 +170,21 @@ def process_invoice_folder(invoice_folder):
                 f"Error processing {file_name}: {error}"
             )
 
-    return pd.DataFrame(
+
+    dataframe = pd.DataFrame(
         all_records
     )
+
+    if dataframe.empty:
+
+        return dataframe
+
+
+    anomaly_result = detect_anomalies(
+        dataframe
+    )
+
+    return anomaly_result
 
 
 print("\nIntegrated production pipeline loaded successfully.")
@@ -124,4 +192,4 @@ print("Functions available:")
 print("process_invoice()")
 print("process_invoice_folder()")
 
-print("\n========== STEP 48.11B COMPLETED ========== ")
+print("\n========== STEP 48.23 READY ========== ")

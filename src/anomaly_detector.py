@@ -23,7 +23,9 @@ def detect_anomalies(dataframe):
 
     scaler = StandardScaler()
 
-    scaled_data = scaler.fit_transform(data)
+    scaled_data = scaler.fit_transform(
+        data
+    )
 
     model = IsolationForest(
         n_estimators=100,
@@ -31,15 +33,31 @@ def detect_anomalies(dataframe):
         random_state=42
     )
 
-    predictions = model.fit_predict(scaled_data)
+    predictions = model.fit_predict(
+        scaled_data
+    )
 
-    anomaly_scores = model.decision_function(scaled_data)
+    anomaly_scores = model.decision_function(
+        scaled_data
+    )
 
     result = dataframe.copy()
 
     result["Prediction"] = predictions
+
     result["Anomaly Score"] = anomaly_scores
-    result["IsAnomaly"] = predictions == -1
+
+    result["IsAnomaly"] = (
+        predictions == -1
+    )
+
+    result["AnomalyReason"] = (
+        result["IsAnomaly"]
+        .map({
+            True: "Unusual pattern detected by Isolation Forest",
+            False: "Normal"
+        })
+    )
 
     return result
 

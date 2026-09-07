@@ -1,7 +1,7 @@
 #=============================
-# Step 48.24E : Clean and Unify Invoice Parser
+# Step 48.21 : Fix Financial Parser
 #=============================
-print("\n========== Step 48.24E : CLEAN AND UNIFY INVOICE PARSER ========== ")
+print("\n========== Step 48.21 : FIX FINANCIAL PARSER ========== ")
 
 import re
 
@@ -15,8 +15,58 @@ def convert_number(value):
 
     try:
         return float(value)
+
     except ValueError:
+
         return None
+
+
+def convert_ocr_number(value):
+
+    cleaned_value = (
+        value
+        .replace("$", "")
+        .replace(" ", "")
+        .strip()
+    )
+
+    if "," in cleaned_value and "." in cleaned_value:
+
+        if cleaned_value.rfind(",") > cleaned_value.rfind("."):
+
+            cleaned_value = (
+                cleaned_value
+                .replace(".", "")
+                .replace(",", ".")
+            )
+
+        else:
+
+            cleaned_value = (
+                cleaned_value
+                .replace(",", "")
+            )
+
+    elif "," in cleaned_value:
+
+        cleaned_value = (
+            cleaned_value
+            .replace(",", ".")
+        )
+
+    try:
+
+        return float(cleaned_value)
+
+    except ValueError:
+
+        return None
+
+
+#=============================
+# Step 48.22 : Connect Item Extraction Functions
+#=============================
+print("\n========== Step 48.22 : CONNECT ITEM EXTRACTION FUNCTIONS ========== ")
 
 
 def extract_invoice_information(ocr_text):
@@ -38,7 +88,9 @@ def extract_invoice_information(ocr_text):
     )
 
     total_amount = (
-        convert_number(total_amount_matches[-1])
+        convert_number(
+            total_amount_matches[-1]
+        )
         if total_amount_matches
         else None
     )
@@ -52,200 +104,871 @@ def extract_invoice_information(ocr_text):
     )
 
     if vendor_match:
-        vendor_name = vendor_match.group(1).strip()
+
+        vendor_name = (
+            vendor_match.group(1).strip()
+        )
 
     return {
+
         "Invoice Number": (
             invoice_number_match.group(1)
             if invoice_number_match
             else None
         ),
+
         "Invoice Date": (
             invoice_date_match.group(1)
             if invoice_date_match
             else None
         ),
+
         "Vendor Name": vendor_name,
+
         "Total Amount": total_amount
+
     }
 
 
-#=============================
-# Step 48.24G : Fix Item Description Extraction
-#=============================
-print("\n========== Step 48.24G : FIX ITEM DESCRIPTION EXTRACTION ========== ")
+def extract_descriptions_and_quantities(ocr_text):
 
-#=============================
-# Step 48.24H : Fix Column-Interleaved Description Extraction
-#=============================
-print("\n========== Step 48.24H : FIX COLUMN-INTERLEAVED DESCRIPTION EXTRACTION ========== ")
+    extracted_items = []
 
-def extract_items(ocr_text):
-
-    items = []
-
-    items_section = re.search(
-        r"ITEMS.*?(?=SUMMARY)",
+    items_match = re.search(
+        r"ITEMS(.*?)(?=SUMMARY)",
         ocr_text,
-        re.IGNORECASE | re.DOTALL
+        re.DOTALL
     )
 
-    if not items_section:
-        return items
+    if not items_match:
 
-    items_text = items_section.group(0)
+        return extracted_items
 
-    items_text = re.sub(
-        r"^.*?Gross worth",
-        "",
-        items_text,
-        count=1,
-        flags=re.IGNORECASE | re.DOTALL
+    items_text = items_match.group(1)
+
+    item_blocks = re.split(
+        r"\n(?=\d+\.\s)",
+        items_text
     )
 
-    quantity_pattern = re.compile(
-        r"\d+(?:[,.]\d{1,2})?\s+each\b",
-        re.IGNORECASE
-    )
+    for block in item_blocks:
 
-    financial_pattern = re.compile(
-        r"([\d\s]+[,.]\d{2})\s+"
-        r"([\d\s]+[,.]\d{2})\s+"
-        r"(\d+(?:[,.]\d+)?)%\s+"
-        r"([\d\s]+[,.]\d{2})",
-        re.IGNORECASE
-    )
+        block = block.strip()
 
-    quantity_matches = list(quantity_pattern.finditer(items_text))
-    financial_matches = list(financial_pattern.finditer(items_text))
+        if not block:
 
-    for index, quantity_match in enumerate(quantity_matches):
+            continue
 
-        description_start = 0
-
-        if index > 0 and index - 1 < len(financial_matches):
-            description_start = financial_matches[index - 1].end()
-
-        description = items_text[
-            description_start:quantity_match.start()
-        ].strip()
-
-        description = re.sub(
-            r"^\s*\d+\.\s*",
-            "",
-            description
+        item_number_match = re.match(
+            r"(\d+)\.\s",
+            block
         )
 
-        description = re.sub(
-            r"^\s*\d+\s+",
-            "",
-            description
+        if not item_number_match:
+
+            continue
+
+        item_number = int(
+            item_number_match.group(1)
         )
 
+        quantity_match = re.search(
+            r"(\d+[,.]\d{2})\s*(?:each|eac)?",
+            block
+        )
+
+        if quantity_match:
+
+            quantity = float(
+                quantity_match.group(1).replace(
+                    ",",
+                    "."
+                )
+            )
+
+        else:
+
+            quantity = None
+
         description = re.sub(
-            r"\s+",
-            " ",
+            r"^\d+\.\s*",
+            "",
+            block
+        )
+
+        description = re.split(
+            r"\d+[,.]\d{2}",
             description
-        ).strip()
+        )[0]
 
-        if description:
-            items.append({
-                "Item Number": index + 1,
-                "Description": description
-            })
+        description = " ".join(
+            description.split()
+        )
 
-    return items
+        extracted_items.append({
 
-print("\nColumn-interleaved description extraction fixed successfully.")
-print("Function available: extract_items()")
-print("\n========== STEP 48.24H COMPLETED ========== ")
+            "Item Number": item_number,
 
-print("\nItem description extraction fixed successfully.")
-print("Function available: extract_items()")
-print("\n========== STEP 48.24G COMPLETED ========== ")
+            "Description": description,
 
+            "Quantity": quantity
 
-def extract_quantities(ocr_text):
+        })
 
-    quantity_matches = re.findall(
-        r"\b(\d+(?:[,.]\d{1,2})?)\s+each\b",
-        ocr_text,
-        re.IGNORECASE
-    )
-
-    quantities = [
-        float(value.replace(",", "."))
-        for value in quantity_matches
-    ]
-
-    return quantities
+    return extracted_items
 
 
-def extract_descriptions(ocr_text):
-
-    items = extract_items(ocr_text)
+def extract_unnumbered_descriptions(ocr_text):
 
     descriptions = []
 
-    for item in items:
+    description_section_match = re.search(
+        r"ITEMS\s+Description\s+(.*?)SUMMARY",
+        ocr_text,
+        re.DOTALL | re.IGNORECASE
+    )
 
-        descriptions.append({
-            "Item Number": item["Item Number"],
-            "Description": item["Description"]
-        })
+    if not description_section_match:
+
+        return descriptions
+
+    description_text = (
+        description_section_match.group(1)
+    )
+
+    description_blocks = re.split(
+        r"\n\s*\n",
+        description_text
+    )
+
+    for block in description_blocks:
+
+        cleaned_description = " ".join(
+            block.split()
+        )
+
+        if cleaned_description:
+
+            descriptions.append(
+                cleaned_description
+            )
 
     return descriptions
 
 
-def extract_financial_values(ocr_text):
+def extract_separate_quantities(ocr_text):
 
-    financial_records = []
-
-    items_section = re.search(
-        r"ITEMS.*?(?=SUMMARY)",
+    quantity_section = re.search(
+        r"Total\s+(.*?)VAT\s*\[%\]",
         ocr_text,
-        re.IGNORECASE | re.DOTALL
+        re.DOTALL
     )
 
-    if not items_section:
-        return financial_records
+    quantities = []
 
-    items_text = items_section.group(0)
+    if quantity_section:
 
-    financial_pattern = re.compile(
-        r"\d+(?:[,.]\d{1,2})?\s+each\s+"
-        r"([\d\s]+[,.]\d{2})\s+"
-        r"([\d\s]+[,.]\d{2})\s+"
-        r"(\d+(?:[,.]\d+)?)%\s+"
-        r"([\d\s]+[,.]\d{2})",
-        re.IGNORECASE
+        quantity_text = (
+            quantity_section.group(1)
+        )
+
+        quantity_matches = re.findall(
+            r"\b\d+[,.]\d{2}\b",
+            quantity_text
+        )
+
+        quantities = [
+
+            float(
+                value.replace(
+                    ",",
+                    "."
+                )
+            )
+
+            for value in quantity_matches
+
+        ]
+
+    return quantities
+
+
+def extract_all_items(ocr_text):
+
+    extracted_items = (
+        extract_descriptions_and_quantities(
+            ocr_text
+        )
     )
 
-    matches = financial_pattern.findall(items_text)
+    if not extracted_items:
 
-    for match in matches:
+        unnumbered_descriptions = (
+            extract_unnumbered_descriptions(
+                ocr_text
+            )
+        )
 
-        unit_price = convert_number(match[0])
-        net_worth = convert_number(match[1])
-        vat = convert_number(match[2])
-        gross_worth = convert_number(match[3])
+        for i, description in enumerate(
+            unnumbered_descriptions,
+            start=1
+        ):
 
-        financial_records.append({
-            "Unit Price": unit_price,
-            "Net Worth": net_worth,
-            "VAT": vat,
-            "Gross Worth": gross_worth
-        })
+            extracted_items.append({
 
-    return financial_records
+                "Item Number": i,
+
+                "Description": description,
+
+                "Quantity": None
+
+            })
+
+    separate_quantities = (
+        extract_separate_quantities(
+            ocr_text
+        )
+    )
+
+    if separate_quantities:
+
+        for i, item in enumerate(
+            extracted_items
+        ):
+
+            if item["Quantity"] is None:
+
+                if i < len(
+                    separate_quantities
+                ):
+
+                    item["Quantity"] = (
+                        separate_quantities[i]
+                    )
+
+    return extracted_items
 
 
-print("\nInvoice parser module loaded successfully.")
+def extract_items(ocr_text):
+
+    return extract_all_items(
+        ocr_text
+    )
+
+
+def extract_quantities(ocr_text):
+
+    extracted_items = (
+        extract_all_items(
+            ocr_text
+        )
+    )
+
+    return [
+
+        item["Quantity"]
+
+        for item in extracted_items
+
+    ]
+
+
+def extract_descriptions(ocr_text):
+
+    extracted_items = (
+        extract_all_items(
+            ocr_text
+        )
+    )
+
+    return [
+
+        {
+            "Description": item[
+                "Description"
+            ]
+        }
+
+        for item in extracted_items
+
+    ]
+
+
+print("\nItem extraction functions connected successfully.")
 print("Functions available:")
-print("extract_invoice_information()")
 print("extract_items()")
 print("extract_quantities()")
 print("extract_descriptions()")
-print("extract_financial_values()")
+print("extract_all_items()")
 
-print("\n========== STEP 48.24E COMPLETED ==========")
+
+#=============================
+# Step 48.21 : Detect Financial Table Sections
+#=============================
+print("\n========== Step 48.21 : DETECT FINANCIAL TABLE SECTIONS ========== ")
+
+
+def extract_financial_sections(ocr_text):
+
+    lines = [
+
+        line.strip()
+
+        for line in ocr_text.splitlines()
+
+        if line.strip()
+
+    ]
+
+    section_positions = {
+
+        "net_price": None,
+
+        "net_worth": None,
+
+        "gross_worth": None
+
+    }
+
+    for index, line in enumerate(lines):
+
+        line_lower = line.lower()
+
+        if (
+            "net price" in line_lower
+            and "net worth" in line_lower
+        ):
+
+            section_positions[
+                "net_price"
+            ] = index
+
+        elif (
+            line_lower == "net worth"
+            and section_positions[
+                "net_worth"
+            ] is None
+        ):
+
+            section_positions[
+                "net_worth"
+            ] = index
+
+        elif (
+            line_lower == "gross worth"
+            and section_positions[
+                "gross_worth"
+            ] is None
+        ):
+
+            section_positions[
+                "gross_worth"
+            ] = index
+
+    sections = {}
+
+    return (
+        section_positions,
+        sections
+    )
+
+
+#=============================
+# Step 48.21 : Extract Single-Line Financial Values
+#=============================
+print("\n========== Step 48.21 : EXTRACT SINGLE-LINE FINANCIAL VALUES ========== ")
+
+
+def extract_single_line_financial_values(
+    ocr_text
+):
+
+    lines = [
+
+        line.strip()
+
+        for line in ocr_text.splitlines()
+
+        if line.strip()
+
+    ]
+
+    records = []
+
+    financial_pattern = re.compile(
+
+        r"each\s+"
+
+        r"([\d\s]+[,.]\d{2})\s+"
+
+        r"([\d\s]+[,.]\d{2})\s+"
+
+        r"(\d+(?:[,.]\d+)?)%\s+"
+
+        r"([\d\s]+[,.]\d{2})",
+
+        re.IGNORECASE
+
+    )
+
+    for line in lines:
+
+        match = (
+            financial_pattern.search(
+                line
+            )
+        )
+
+        if not match:
+
+            continue
+
+        unit_price = (
+            convert_ocr_number(
+                match.group(1)
+            )
+        )
+
+        net_worth = (
+            convert_ocr_number(
+                match.group(2)
+            )
+        )
+
+        vat = (
+            convert_ocr_number(
+                match.group(3)
+            )
+        )
+
+        gross_worth = (
+            convert_ocr_number(
+                match.group(4)
+            )
+        )
+
+        records.append({
+
+            "Unit Price": unit_price,
+
+            "Net Worth": net_worth,
+
+            "VAT": vat,
+
+            "Gross Worth": gross_worth,
+
+            "Extraction Layout": "Single-Line"
+
+        })
+
+    return records
+
+
+#=============================
+# Step 48.21 : Extract Separated Financial Values
+#=============================
+print("\n========== Step 48.21 : EXTRACT SEPARATED FINANCIAL VALUES ========== ")
+
+
+def extract_separated_financial_values(
+    ocr_text
+):
+
+    lines = [
+
+        line.strip()
+
+        for line in ocr_text.splitlines()
+
+        if line.strip()
+
+    ]
+
+    net_values = []
+
+    vat_values = []
+
+    gross_values = []
+
+    net_section_start = None
+
+    gross_section_positions = []
+
+    for index, line in enumerate(lines):
+
+        lower_line = line.lower()
+
+        if (
+            "net price" in lower_line
+            and "net worth" in lower_line
+        ):
+
+            net_section_start = index
+
+        if lower_line == "gross worth":
+
+            gross_section_positions.append(
+                index
+            )
+
+        elif (
+            lower_line == "gross"
+            and index + 1 < len(lines)
+            and lines[index + 1].lower()
+            == "worth"
+        ):
+
+            gross_section_positions.append(
+                index
+            )
+
+    if net_section_start is None:
+
+        return []
+
+    net_end = len(lines)
+
+    for index in range(
+        net_section_start + 1,
+        len(lines)
+    ):
+
+        lower_line = lines[index].lower()
+
+        if lower_line in (
+            "gross worth",
+            "gross"
+        ):
+
+            net_end = index
+
+            break
+
+    net_lines = lines[
+        net_section_start + 1:
+        net_end
+    ]
+
+    for line in net_lines:
+
+        financial_match = re.fullmatch(
+
+            r"\$?\s*"
+            r"([\d\s]+[,.]\d{2})\s+"
+            r"([\d\s]+[,.]\d{2})",
+
+            line
+
+        )
+
+        if financial_match:
+
+            unit_price = (
+                convert_ocr_number(
+                    financial_match.group(1)
+                )
+            )
+
+            net_worth = (
+                convert_ocr_number(
+                    financial_match.group(2)
+                )
+            )
+
+            net_values.append({
+
+                "Unit Price": unit_price,
+
+                "Net Worth": net_worth
+
+            })
+
+            continue
+
+        vat_match = re.fullmatch(
+
+            r"(\d+(?:[,.]\d+)?)%",
+
+            line
+
+        )
+
+        if vat_match:
+
+            vat_values.append(
+
+                convert_ocr_number(
+                    vat_match.group(1)
+                )
+
+            )
+
+    if gross_section_positions:
+
+        first_gross_position = (
+            gross_section_positions[0]
+        )
+
+        if len(
+            gross_section_positions
+        ) >= 2:
+
+            second_gross_position = (
+                gross_section_positions[1]
+            )
+
+        else:
+
+            second_gross_position = len(
+                lines
+            )
+
+        gross_start = (
+            first_gross_position + 1
+        )
+
+        if (
+            lines[first_gross_position].lower()
+            == "gross"
+        ):
+
+            gross_start += 1
+
+        gross_lines = lines[
+            gross_start:
+            second_gross_position
+        ]
+
+        for line in gross_lines:
+
+            if re.fullmatch(
+                r"\$?\s*[\d\s]+[,.]\d{2}",
+                line
+            ):
+
+                value = (
+                    convert_ocr_number(
+                        line
+                    )
+                )
+
+                if value is not None:
+
+                    gross_values.append(
+                        value
+                    )
+
+    item_count = min(
+
+        len(net_values),
+
+        len(vat_values),
+
+        len(gross_values)
+
+    )
+
+    records = []
+
+    for index in range(
+        item_count
+    ):
+
+        records.append({
+
+            "Unit Price": net_values[
+                index
+            ]["Unit Price"],
+
+            "Net Worth": net_values[
+                index
+            ]["Net Worth"],
+
+            "VAT": vat_values[
+                index
+            ],
+
+            "Gross Worth": gross_values[
+                index
+            ],
+
+            "Extraction Layout":
+                "Separated-Financial"
+
+        })
+
+    return records
+
+
+#=============================
+# Step 48.21 : Extract Split Gross Worth Values
+#=============================
+print("\n========== Step 48.21 : EXTRACT SPLIT GROSS WORTH VALUES ========== ")
+
+
+def extract_item_gross_worth_values_v2(
+    ocr_text
+):
+
+    lines = [
+
+        line.strip()
+
+        for line in ocr_text.splitlines()
+
+        if line.strip()
+
+    ]
+
+    gross_section_positions = []
+
+    index = 0
+
+    while index < len(lines):
+
+        current_line = (
+            lines[index].lower()
+        )
+
+        if current_line == "gross worth":
+
+            gross_section_positions.append(
+                index
+            )
+
+        elif (
+            current_line == "gross"
+            and index + 1 < len(lines)
+            and lines[index + 1].lower()
+            == "worth"
+        ):
+
+            gross_section_positions.append(
+                index
+            )
+
+        index += 1
+
+    if not gross_section_positions:
+
+        return []
+
+    if len(gross_section_positions) >= 2:
+
+        first_position = (
+            gross_section_positions[0]
+        )
+
+        second_position = (
+            gross_section_positions[1]
+        )
+
+        start_position = (
+            first_position + 1
+        )
+
+        if (
+            lines[first_position].lower()
+            == "gross"
+        ):
+
+            start_position += 1
+
+        end_position = second_position
+
+    else:
+
+        first_position = (
+            gross_section_positions[0]
+        )
+
+        start_position = (
+            first_position + 1
+        )
+
+        if (
+            lines[first_position].lower()
+            == "gross"
+        ):
+
+            start_position += 1
+
+        end_position = len(lines)
+
+    gross_values = []
+
+    for line in lines[
+        start_position:end_position
+    ]:
+
+        value_text = (
+
+            line
+            .replace("$", "")
+            .replace(" ", "")
+
+        )
+
+        if not re.match(
+            r"^\d+[,.]\d{2}$",
+            value_text
+        ):
+
+            continue
+
+        value = (
+            convert_ocr_number(
+                value_text
+            )
+        )
+
+        if (
+            value is not None
+            and value > 0
+        ):
+
+            gross_values.append(
+                value
+            )
+
+    return gross_values
+
+
+#=============================
+# Step 48.21 : Combine Financial Parsers
+#=============================
+print("\n========== Step 48.21 : COMBINE FINANCIAL PARSERS ========== ")
+
+
+def extract_all_ocr_financial_rows(
+    ocr_text
+):
+
+    single_line_rows = (
+        extract_single_line_financial_values(
+            ocr_text
+        )
+    )
+
+    if single_line_rows:
+
+        return single_line_rows
+
+    separated_rows = (
+        extract_separated_financial_values(
+            ocr_text
+        )
+    )
+
+    if separated_rows:
+
+        return separated_rows
+
+    return []
+
+
+print("\nFinancial parser functions connected successfully.")
+print("Function available:")
+print("extract_all_ocr_financial_rows()")
+
+print("\n========== PARSER MODULE READY ========== ")

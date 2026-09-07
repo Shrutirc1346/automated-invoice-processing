@@ -34,7 +34,10 @@ VISUALIZATION_FOLDER = os.path.join(
     "visualizations"
 )
 
-os.makedirs("reports", exist_ok=True)
+os.makedirs(
+    "reports",
+    exist_ok=True
+)
 
 
 #=============================
@@ -117,7 +120,12 @@ story.append(
     )
 )
 
-story.append(Spacer(1, 10))
+story.append(
+    Spacer(
+        1,
+        10
+    )
+)
 
 
 #=============================
@@ -177,7 +185,11 @@ story.append(
 )
 
 architecture_data = [
-    ["Stage", "Technology / Module", "Purpose"],
+    [
+        "Stage",
+        "Technology / Module",
+        "Purpose"
+    ],
     [
         "Image preprocessing",
         "OpenCV / preprocessing.py",
@@ -221,16 +233,49 @@ architecture_table = Table(
 
 architecture_table.setStyle(
     TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("PADDING", (0, 0), (-1, -1), 5)
+        (
+            "BACKGROUND",
+            (0, 0),
+            (-1, 0),
+            colors.lightgrey
+        ),
+        (
+            "GRID",
+            (0, 0),
+            (-1, -1),
+            0.5,
+            colors.grey
+        ),
+        (
+            "FONTNAME",
+            (0, 0),
+            (-1, 0),
+            "Helvetica-Bold"
+        ),
+        (
+            "FONTSIZE",
+            (0, 0),
+            (-1, -1),
+            8
+        ),
+        (
+            "VALIGN",
+            (0, 0),
+            (-1, -1),
+            "TOP"
+        ),
+        (
+            "PADDING",
+            (0, 0),
+            (-1, -1),
+            5
+        )
     ])
 )
 
-story.append(architecture_table)
+story.append(
+    architecture_table
+)
 
 
 #=============================
@@ -291,7 +336,7 @@ story.append(
 
 
 #=============================
-# Section 6 : Verified Results
+# Section 6 : Verified Production Results
 #=============================
 story.append(
     Paragraph(
@@ -301,19 +346,57 @@ story.append(
 )
 
 results_data = [
-    ["Metric", "Result"],
-    ["Invoice images processed", "499"],
-    ["OCR processing coverage", "100%"],
-    ["Invoices with extracted items", "486 / 499 (97.39%)"],
-    ["Extracted item records", "1,805"],
-    ["Quantity extraction", "1,788 / 1,805 (99.06%)"],
-    ["Unit Price extraction", "1,574 / 1,805 (87.20%)"],
-    ["Net Worth extraction", "1,574 / 1,805 (87.20%)"],
-    ["VAT extraction", "1,574 / 1,805 (87.20%)"],
-    ["Gross Worth extraction", "1,699 / 1,805 (94.13%)"],
     [
-        "Complete financial records for ML",
-        "1,205"
+        "Metric",
+        "Result"
+    ],
+    [
+        "Invoice images processed",
+        "499"
+    ],
+    [
+        "OCR processing coverage",
+        "100%"
+    ],
+    [
+        "Invoices with extracted items",
+        "486 / 499 (97.39%)"
+    ],
+    [
+        "Extracted item records",
+        "1,805"
+    ],
+    [
+        "Quantity extraction",
+        "1,788 / 1,805 (99.06%)"
+    ],
+    [
+        "Unit Price extraction",
+        "1,574 / 1,805 (87.20%)"
+    ],
+    [
+        "Net Worth extraction",
+        "1,574 / 1,805 (87.20%)"
+    ],
+    [
+        "VAT extraction",
+        "1,574 / 1,805 (87.20%)"
+    ],
+    [
+        "Gross Worth extraction",
+        "1,699 / 1,805 (94.13%)"
+    ],
+    [
+        "Records processed by production pipeline",
+        "1,805"
+    ],
+    [
+        "Valid financial records",
+        "474"
+    ],
+    [
+        "Invalid or incomplete financial records",
+        "1,331"
     ]
 ]
 
@@ -327,15 +410,43 @@ results_table = Table(
 
 results_table.setStyle(
     TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
-        ("PADDING", (0, 0), (-1, -1), 5)
+        (
+            "BACKGROUND",
+            (0, 0),
+            (-1, 0),
+            colors.lightgrey
+        ),
+        (
+            "GRID",
+            (0, 0),
+            (-1, -1),
+            0.5,
+            colors.grey
+        ),
+        (
+            "FONTNAME",
+            (0, 0),
+            (-1, 0),
+            "Helvetica-Bold"
+        ),
+        (
+            "FONTSIZE",
+            (0, 0),
+            (-1, -1),
+            8.5
+        ),
+        (
+            "PADDING",
+            (0, 0),
+            (-1, -1),
+            5
+        )
     ])
 )
 
-story.append(results_table)
+story.append(
+    results_table
+)
 
 
 #=============================
@@ -364,6 +475,16 @@ story.append(
         "Additional checks include invoice-date logic and duplicate detection. "
         "These rules help distinguish records that are mathematically "
         "consistent from records that require further investigation.",
+        body_style
+    )
+)
+
+story.append(
+    Paragraph(
+        "The current production output contains 474 valid financial records "
+        "and 1,331 invalid or incomplete records. An invalid validation result "
+        "does not automatically indicate fraud because missing or incorrectly "
+        "extracted OCR fields can cause financial consistency checks to fail.",
         body_style
     )
 )
@@ -401,11 +522,12 @@ story.append(
 
 story.append(
     Paragraph(
-        "The model was applied to 1,205 complete financial records using "
-        "Quantity, Unit Price, Net Worth and Gross Worth. It identified "
-        "1,061 normal records and 144 potential anomalies, corresponding "
-        "to an anomaly rate of 11.95%. These records represent potential "
-        "anomalies and should not automatically be interpreted as confirmed fraud.",
+        "The current production pipeline generated anomaly predictions for "
+        "1,805 item-level records using Quantity, Unit Price, Net Worth and "
+        "Gross Worth. The output identified 1,543 records as normal and "
+        "262 records as potential anomalies, corresponding to an anomaly "
+        "rate of 14.52%. These records represent potential anomalies and "
+        "should not automatically be interpreted as confirmed fraud.",
         body_style
     )
 )
@@ -422,7 +544,10 @@ story.append(
 )
 
 checks_data = [
-    ["Check", "Result"],
+    [
+        "Check",
+        "Result"
+    ],
     [
         "Vendor Z-score",
         "499 checked; 6 had sufficient repeated-vendor history; "
@@ -465,16 +590,49 @@ checks_table = Table(
 
 checks_table.setStyle(
     TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 8),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("PADDING", (0, 0), (-1, -1), 5)
+        (
+            "BACKGROUND",
+            (0, 0),
+            (-1, 0),
+            colors.lightgrey
+        ),
+        (
+            "GRID",
+            (0, 0),
+            (-1, -1),
+            0.5,
+            colors.grey
+        ),
+        (
+            "FONTNAME",
+            (0, 0),
+            (-1, 0),
+            "Helvetica-Bold"
+        ),
+        (
+            "FONTSIZE",
+            (0, 0),
+            (-1, -1),
+            8
+        ),
+        (
+            "VALIGN",
+            (0, 0),
+            (-1, -1),
+            "TOP"
+        ),
+        (
+            "PADDING",
+            (0, 0),
+            (-1, -1),
+            5
+        )
     ])
 )
 
-story.append(checks_table)
+story.append(
+    checks_table
+)
 
 
 #=============================
@@ -504,10 +662,38 @@ investigation_data = [
         "Net Worth",
         "Gross Worth"
     ],
-    ["66053252", "7", "0", "45150.30", "4515.03", "1315.51"],
-    ["60665075", "5", "25", "174.25", "4348.50", "4783.35"],
-    ["97781335", "2", "2", "3600.00", "7200.00", "920.00"],
-    ["52230192", "1", "30", "17.50", "517.50", "569.25"]
+    [
+        "66053252",
+        "7",
+        "0",
+        "45150.30",
+        "4515.03",
+        "1315.51"
+    ],
+    [
+        "60665075",
+        "5",
+        "25",
+        "174.25",
+        "4348.50",
+        "4783.35"
+    ],
+    [
+        "97781335",
+        "2",
+        "2",
+        "3600.00",
+        "7200.00",
+        "920.00"
+    ],
+    [
+        "52230192",
+        "1",
+        "30",
+        "17.50",
+        "517.50",
+        "569.25"
+    ]
 ]
 
 investigation_table = Table(
@@ -524,17 +710,50 @@ investigation_table = Table(
 
 investigation_table.setStyle(
     TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 7.5),
-        ("PADDING", (0, 0), (-1, -1), 4)
+        (
+            "BACKGROUND",
+            (0, 0),
+            (-1, 0),
+            colors.lightgrey
+        ),
+        (
+            "GRID",
+            (0, 0),
+            (-1, -1),
+            0.5,
+            colors.grey
+        ),
+        (
+            "FONTNAME",
+            (0, 0),
+            (-1, 0),
+            "Helvetica-Bold"
+        ),
+        (
+            "FONTSIZE",
+            (0, 0),
+            (-1, -1),
+            7.5
+        ),
+        (
+            "PADDING",
+            (0, 0),
+            (-1, -1),
+            4
+        )
     ])
 )
 
-story.append(investigation_table)
+story.append(
+    investigation_table
+)
 
-story.append(Spacer(1, 8))
+story.append(
+    Spacer(
+        1,
+        8
+    )
+)
 
 story.append(
     Paragraph(
@@ -578,29 +797,57 @@ for filename in visualizations:
 
         story.append(
             Paragraph(
-                filename.replace(".png", "").replace("_", " ").title(),
+                filename.replace(
+                    ".png",
+                    ""
+                ).replace(
+                    "_",
+                    " "
+                ).title(),
                 small_style
             )
         )
 
-        image = Image(image_path)
+        image = Image(
+            image_path
+        )
 
         image.drawWidth = 5.7 * inch
         image.drawHeight = 1.55 * inch
 
-        story.append(image)
-        story.append(Spacer(1, 5))
+        story.append(
+            image
+        )
+
+        story.append(
+            Spacer(
+                1,
+                5
+            )
+        )
 
 
 #=============================
 # Section 12 : Limitations
 #=============================
-story.append(PageBreak())
+story.append(
+    PageBreak()
+)
 
 story.append(
     Paragraph(
         "12. Limitations",
         heading_style
+    )
+)
+
+story.append(
+    Paragraph(
+        "The production validation results include invalid or incomplete "
+        "records caused by missing or inaccurate OCR extraction. Such records "
+        "require review and should not be treated as confirmed fraudulent "
+        "invoices.",
+        body_style
     )
 )
 
@@ -656,8 +903,9 @@ story.append(
 story.append(
     Paragraph(
         "The verified production workflow processed 499 invoice images and "
-        "produced 1,805 item-level records. Isolation Forest analyzed 1,205 "
-        "complete financial records and identified 144 potential anomalies.",
+        "produced 1,805 item-level records. The current production anomaly "
+        "detection output identified 1,543 normal records and 262 potential "
+        "anomalies, corresponding to an anomaly rate of 14.52%.",
         body_style
     )
 )
@@ -706,9 +954,18 @@ story.append(
 #=============================
 # Build PDF
 #=============================
-document.build(story)
+document.build(
+    story
+)
 
-print(f"\nTechnical report created successfully:")
-print(OUTPUT_FILE)
+print(
+    "\nTechnical report created successfully:"
+)
 
-print("\n========== STEP 48.29 COMPLETED ==========")
+print(
+    OUTPUT_FILE
+)
+
+print(
+    "\n========== STEP 48.29 COMPLETED =========="
+)
