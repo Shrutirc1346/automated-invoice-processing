@@ -1,14 +1,29 @@
 #=============================
-# Step 48.12A : Add OCR Timeout Protection
+# Step 53 : Fix Cross-Platform Tesseract Configuration
 #=============================
-print("\n========== Step 48.12A : ADD OCR TIMEOUT PROTECTION ========== ")
+print("\n========== Step 53 : FIX CROSS-PLATFORM TESSERACT CONFIGURATION ========== ")
 
-import os
 import shutil
 import pytesseract
 
 from src.preprocessing import preprocess_image
 
+
+TESSERACT_PATH = shutil.which("tesseract")
+
+if TESSERACT_PATH:
+
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+
+else:
+
+    raise FileNotFoundError(
+        "Tesseract OCR was not found in the system PATH."
+    )
+
+
+print("\nTesseract OCR configured successfully.")
+print(f"Tesseract path: {TESSERACT_PATH}")
 
 TESSERACT_PATH = shutil.which(
     "tesseract"
